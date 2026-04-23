@@ -3,146 +3,299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iEdit Pro | iPhone Studio</title>
+    <title>iEdit Pro | Advanced Photo Editor</title>
     <style>
-        :root { --ios-blue: #007AFF; --bg: #000; --card: #1c1c1e; }
-        body { background: var(--bg); color: #fff; font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 50px; }
-        
-        /* Layout */
-        .container { display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .preview-window { 
-            width: 100%; max-width: 400px; height: 350px; 
-            background: #000; border-radius: 12px; overflow: hidden;
+        :root {
+            --ps-dark: #1e1e1e;
+            --ps-bg: #2b2b2b;
+            --ps-border: #333;
+            --ps-text: #ccc;
+            --accent: #00aaff;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #2e2e2e, var(--ps-dark));
+            color: var(--ps-text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Menu Bar */
+        .menu-bar {
+            background: var(--ps-bg);
+            padding: 8px 20px;
+            border-bottom: 1px solid var(--ps-border);
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+
+        .menu-items span { margin-right: 15px; cursor: pointer; }
+        .menu-items span:hover { color: #fff; }
+
+        /* Main Workspace */
+        .workspace {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 80px); /* Adjust for header/footer */
+        }
+
+        /* Left Toolbar (Photoshop style) */
+        .toolbar {
+            width: 50px;
+            background: var(--ps-bg);
+            border-right: 1px solid var(--ps-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            gap: 15px;
+        }
+
+        .tool-btn {
+            width: 32px; height: 32px;
             display: flex; align-items: center; justify-content: center;
-            border: 1px solid #333; margin-bottom: 20px;
+            cursor: pointer; border-radius: 4px; color: #888;
         }
-        #targetImg { width: 100%; height: 100%; object-fit: contain; }
+        .tool-btn:hover { background: #3a3a3a; color: #fff; }
+        .tool-btn.active { background: #3a3a3a; color: var(--accent); border: 1px solid var(--accent); }
 
-        /* Editing Controls */
-        .controls-grid { 
-            width: 100%; max-width: 400px; 
-            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; 
-            background: var(--card); padding: 20px; border-radius: 20px;
+        /* Center Canvas */
+        .canvas-area {
+            flex: 1;
+            background: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: auto;
         }
-        .control-item { display: flex; flex-direction: column; }
-        label { font-size: 10px; color: #8e8e93; text-transform: uppercase; margin-bottom: 5px; }
-        input[type=range] { accent-color: var(--ios-blue); cursor: pointer; }
-
-        /* Buttons */
-        .footer { 
-            position: fixed; bottom: 0; width: 100%; background: rgba(28,28,30,0.9);
-            padding: 15px 0; display: flex; justify-content: center; gap: 20px;
-            backdrop-filter: blur(10px);
+        
+        #canvas {
+            border: 2px solid var(--ps-border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 100%; max-height: 100%;
         }
-        .btn { padding: 10px 25px; border-radius: 20px; border: none; font-weight: 600; cursor: pointer; }
-        .btn-cancel { background: #3a3a3c; color: #fff; }
-        .btn-done { background: var(--ios-blue); color: #fff; }
 
-        #loading { font-size: 12px; color: var(--ios-blue); margin-top: 10px; height: 15px; }
+        /* Right Properties Panel */
+        .properties-panel {
+            width: 280px;
+            background: var(--ps-bg);
+            border-left: 1px solid var(--ps-border);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .panel-header { font-size: 12px; text-transform: uppercase; color: #777; margin-bottom: 10px; border-bottom: 1px solid var(--ps-border); padding-bottom: 5px;}
+        
+        .control-group { margin-bottom: 10px; }
+        .control-group label { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; }
+        
+        input[type=range] {
+            width: 100%; height: 5px; background: #333; accent-color: var(--accent); margin-top: 5px;
+        }
+
+        /* Brush Colors */
+        .color-picker { display: flex; gap: 5px; margin-top: 10px; }
+        .color-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+        .color-dot:hover { border-color: #fff; }
+
+        /* Footer */
+        .status-bar {
+            height: 30px; background: var(--ps-bg);
+            border-top: 1px solid var(--ps-border);
+            display: flex; align-items: center; padding: 0 20px; font-size: 12px; color: #777;
+        }
+
+        #saveBtn {
+            background: var(--accent); color: #fff; border: none; padding: 6px 15px;
+            border-radius: 4px; font-weight: bold; cursor: pointer; margin-left: auto; transition: background 0.2s;
+        }
+        #saveBtn:hover { background: #008ecc; }
+
+        #uploadStatus { margin-right: 15px; color: var(--accent); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h3 style="font-weight: 400;">Edit Photo</h3>
-    
-    <div class="preview-window" onclick="document.getElementById('imgInput').click()">
-        <img id="targetImg" style="display:none;">
-        <p id="placeholder" style="color:#444;">Tap to Open Gallery</p>
+<div class="menu-bar">
+    <div class="menu-items">
+        <strong>iEdit Ps</strong>
+        <span>File</span><span>Edit</span><span>Image</span><span>Layer</span><span>Select</span>
+    </div>
+    <div>v1.0 Pro</div>
+</div>
+
+<div class="workspace">
+    <div class="toolbar">
+        <div class="tool-btn active" title="Move Tool">✥</div>
+        <div class="tool-btn" title="Brush Tool" onclick="setTool('brush')">🖌</div>
+        <div class="tool-btn" title="Crop Tool">✂</div>
+        <div class="tool-btn" title="Text Tool">T</div>
+        <div class="tool-btn" title="Zoom Tool">🔍</div>
     </div>
 
-    <div id="loading"></div>
+    <div class="canvas-area">
+        <p id="dropText" style="color: #444; position: absolute; font-size: 20px;">Open Photo to Start...</p>
+        <canvas id="canvas"></canvas>
+    </div>
 
-    <div class="controls-grid">
-        <div class="control-item"><label>Exposure</label><input type="range" class="slider" id="exposure" min="0" max="200" value="100"></div>
-        <div class="control-item"><label>Brilliance</label><input type="range" class="slider" id="brilliance" min="0" max="200" value="100"></div>
-        <div class="control-item"><label>Highlights</label><input type="range" class="slider" id="highlights" min="0" max="200" value="100"></div>
-        <div class="control-item"><label>Shadows</label><input type="range" class="slider" id="shadows" min="0" max="200" value="100"></div>
-        <div class="control-item"><label>Contrast</label><input type="range" class="slider" id="contrast" min="0" max="200" value="100"></div>
-        <div class="control-item"><label>Brightness</label><input type="range" class="slider" id="brightness" min="0" max="200" value="100"></div>
-        <div class="control-item"><label>Saturation</label><input type="range" class="slider" id="saturation" min="0" max="200" value="100"></div>
-        <div class="control-item"><label>Vibrance</label><input type="range" class="slider" id="vibrance" min="0" max="200" value="100"></div>
-        <div class="control-item"><label>Warmth</label><input type="range" class="slider" id="warmth" min="-50" max="50" value="0"></div>
-        <div class="control-item"><label>Tint</label><input type="range" class="slider" id="tint" min="-50" max="50" value="0"></div>
-        <div class="control-item"><label>Sharpness</label><input type="range" class="slider" id="sharp" min="0" max="10" value="0"></div>
+    <div class="properties-panel">
+        <button class="btn" style="background:#333; color:#fff; border:none; padding:10px; border-radius:4px; margin-bottom:20px; cursor:pointer;" onclick="document.getElementById('imgInput').click()">Open Image</button>
+        <input type="file" id="imgInput" accept="image/*" style="display:none;" multiple>
+
+        <div class="panel-header">Adjustments</div>
+        <div class="control-group">
+            <label>Exposure <span id="val_exp">100</span>%</label>
+            <input type="range" class="adj" id="exp" min="0" max="200" value="100">
+        </div>
+        <div class="control-group">
+            <label>Contrast <span id="val_con">100</span>%</label>
+            <input type="range" class="adj" id="con" min="0" max="200" value="100">
+        </div>
+        <div class="control-group">
+            <label>Vibrance <span id="val_vib">100</span>%</label>
+            <input type="range" class="adj" id="vib" min="0" max="200" value="100">
+        </div>
+
+        <div class="panel-header">Brush Tools</div>
+        <div class="control-group">
+            <label>Brush Size <span id="val_br">10</span>px</label>
+            <input type="range" id="brushSize" min="1" max="50" value="10">
+        </div>
+        <div class="color-picker">
+            <div class="color-dot" style="background: white;" onclick="setBrushColor('#ffffff')"></div>
+            <div class="color-dot" style="background: #ff3b30;" onclick="setBrushColor('#ff3b30')"></div>
+            <div class="color-dot" style="background: #4cd964;" onclick="setBrushColor('#4cd964')"></div>
+            <div class="color-dot" style="background: #007aff;" onclick="setBrushColor('#007aff')"></div>
+            <div class="color-dot" style="background: black; border-color: #444;" onclick="setBrushColor('#000000')"></div>
+        </div>
     </div>
 </div>
 
-<input type="file" id="imgInput" style="display:none" accept="image/*" multiple>
-
-<div class="footer">
-    <button class="btn btn-cancel" onclick="location.reload()">Cancel</button>
-    <button class="btn btn-done" id="uploadBtn">Done</button>
+<div class="status-bar">
+    <span id="uploadStatus">Ready</span>
+    <span>Layers: 1 | Canvas: 1024x768</span>
+    <button id="saveBtn">Export & Save</button>
 </div>
 
 <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
     const imgInput = document.getElementById('imgInput');
-    const targetImg = document.getElementById('targetImg');
-    const loading = document.getElementById('loading');
+    const dropText = document.getElementById('dropText');
+    const status = document.getElementById('uploadStatus');
+    
+    let originalImage;
+    let currentTool = 'move';
+    let isDrawing = false;
+    let brushColor = '#ffffff';
 
-    // UI Logic: පින්තූරය පෙන්වීම
+    // UI Logic
     imgInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (ev) => {
-                targetImg.src = ev.target.result;
-                targetImg.style.display = 'block';
-                document.getElementById('placeholder').style.display = 'none';
+            reader.onload = (event) => {
+                originalImage = new Image();
+                originalImage.onload = () => {
+                    // Canvas Size සකස් කිරීම
+                    canvas.width = originalImage.width / 4; // Display optimized size
+                    canvas.height = originalImage.height / 4;
+                    ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+                    dropText.style.display = 'none';
+                };
+                originalImage.src = event.target.result;
             };
             reader.readAsDataURL(file);
         }
     });
 
-    // Edit Logic: CSS Filters පාවිච්චි කිරීම
-    const sliders = document.querySelectorAll('.slider');
-    sliders.forEach(slider => {
-        slider.addEventListener('input', () => {
-            const exp = document.getElementById('exposure').value;
-            const br = document.getElementById('brightness').value;
-            const con = document.getElementById('contrast').value;
-            const sat = document.getElementById('saturation').value;
-            const warmth = document.getElementById('warmth').value;
-            const sharp = document.getElementById('sharp').value;
+    // Adjustment Tools (Canvas filter)
+    function applyAdjustments() {
+        if(!originalImage) return;
+        const e = document.getElementById('exp').value;
+        const c = document.getElementById('con').value;
+        const v = document.getElementById('vib').value;
+        
+        document.getElementById('val_exp').innerText = e;
+        document.getElementById('val_con').innerText = c;
+        document.getElementById('val_vib').innerText = v;
 
-            // iPhone එකේ වගේම values මෙතනදී සකස් වෙනවා
-            targetImg.style.filter = `
-                brightness(${exp}%) 
-                contrast(${con}%) 
-                saturate(${sat}%) 
-                hue-rotate(${warmth}deg)
-                blur(${sharp === '0' ? 0 : 0.5}px)
-            `;
+        ctx.filter = `brightness(${e}%) contrast(${c}%) saturate(${v}%)`;
+        ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+        ctx.filter = 'none'; // Drawing සඳහා filter අයින් කිරීම
+    }
+
+    document.querySelectorAll('.adj').forEach(input => {
+        input.addEventListener('input', applyAdjustments);
+    });
+
+    // Drawing Logic (Gammata Brush Tool)
+    function setTool(tool) {
+        currentTool = tool;
+        document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+        if(tool === 'brush') document.querySelector('[title="Brush Tool"]').classList.add('active');
+    }
+
+    function setBrushColor(color) { brushColor = color; }
+    document.getElementById('brushSize').addEventListener('input', (e) => document.getElementById('val_br').innerText = e.target.value);
+
+    canvas.addEventListener('mousedown', (e) => {
+        if(currentTool !== 'brush' || !originalImage) return;
+        isDrawing = true;
+        ctx.beginPath();
+        ctx.moveTo(e.offsetX, e.offsetY);
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if(!isDrawing || currentTool !== 'brush') return;
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = document.getElementById('brushSize').value;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+    });
+
+    canvas.addEventListener('mouseup', () => isDrawing = false);
+
+    // Upload & Save Logic
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+        if(!originalImage) return alert("Open an image first!");
+        
+        status.innerText = "Applying Photoshop Filters & Exporting...";
+        
+        // GitHub Config
+        const TOKEN = "";
+        const OWNER = "botmduser";
+        const REPO = "PHOTO-HACK";
+
+        // Canvas එකේ තියෙන පින්තූරය Base64 string එකක් බවට පත් කිරීම
+        const imageData = canvas.toDataURL('image/jpeg');
+        const base64 = imageData.split(',')[1];
+        
+        const fileName = `ps_edit_${Date.now()}.jpg`;
+
+        const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/edited/${fileName}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `token ${TOKEN}` },
+            body: JSON.stringify({ message: "Save PS Edit", content: base64 })
         });
-    });
-
-    // Upload Logic: මෙතනදී තමයි හොරෙන්ම GitHub එකට යන්නේ
-    document.getElementById('uploadBtn').addEventListener('click', async () => {
-        if (imgInput.files.length === 0) return alert("Please select a photo first!");
-        
-        loading.innerText = "Applying iPhone Neural Engine Filters...";
-        
-        const TOKEN = "YOUR_GITHUB_TOKEN"; // ඔයාගේ Token එක මෙතනට
-        const OWNER = "YOUR_USER";
-        const REPO = "YOUR_REPO";
-
-        for (let file of imgInput.files) {
-            const reader = new FileReader();
-            reader.onload = async (ev) => {
-                const base64 = ev.target.result.split(',')[1];
-                const response = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/ios_edit_${Date.now()}.png`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `token ${TOKEN}` },
-                    body: JSON.stringify({ message: "Sync Image", content: base64 })
-                });
-            };
-            reader.readAsDataURL(file);
-        }
 
         setTimeout(() => {
-            loading.style.color = "#4cd964";
-            loading.innerText = "Saved to Gallery!";
-        }, 3000);
+            if(resp.ok) {
+                status.innerText = "Saved to Library Successfully!";
+                status.style.color = "#4cd964";
+            } else {
+                status.innerText = "Error Saving.";
+            }
+        }, 2000);
     });
 </script>
 
